@@ -1,7 +1,7 @@
 const express = require("express")
 const morgan = require("morgan")
 const cors = require("cors")
-const app = express()   
+const app = express()
 
 const Person = require("./models/person")
 
@@ -29,41 +29,27 @@ app.get("/api/persons/:id", async (req, res, next) => {
     const id = req.params.id
     try {
         const foundPerson = await Person.findById(id)
-        foundPerson 
-                ? res.json(foundPerson)
-                : res.status(404).end()        
-    } 
+        foundPerson
+            ? res.json(foundPerson)
+            : res.status(404).end()
+    }
     catch (error) { next(error) }
 })
 
-app.post("/api/persons/", async (req, res) => {
+app.post("/api/persons/", async (req, res, next) => {
     const body = req.body
 
-    if (!body) {
-        return res.status(400).json({
-            error: "content missing"
-        })
-    }
-    if (!body.name || !body.number) {
-        return res.status(400).json({
-            error: "name or number missing"
-        })
-    }
-
-    const foundPerson = await Person.findOne({name: body.name})
-    if(foundPerson) {
-        return res.status(400).json({ error: "name must be unique" })
-    }
-
-    const newPerson = Person({
+    const newPerson = new Person({
         name: body.name,
         number: body.number,
     })
 
-    newPerson.save().then(savedPerson => {
+    try {
+        const savedPerson = await newPerson.save()
         res.json(savedPerson)
-    })
-    
+    }
+    catch (error) { next(error) }
+
 })
 
 app.delete("/api/persons/:id", async (req, res, next) => {
@@ -71,8 +57,8 @@ app.delete("/api/persons/:id", async (req, res, next) => {
     try {
         const deletedPerson = await Person.findByIdAndDelete(id)
         deletedPerson
-                ? res.json(deletedPerson)
-                : res.sendStatus(204)
+            ? res.json(deletedPerson)
+            : res.sendStatus(204)
     }
     catch (error) { next(error) }
 })
@@ -81,21 +67,15 @@ app.put("/api/persons/:id", async (req, res, next) => {
     const id = req.params.id
     const body = req.body
 
-    if (!body) {
-        return res.status(400).json({
-            error: "content missing"
-        })
-    }
-
     const toUpdate = {
         number: body.number
     }
 
     try {
-        const updatedPerson = await Person.findByIdAndUpdate(id, toUpdate, { new: true })
+        const updatedPerson = await Person.findByIdAndUpdate(id, toUpdate, { new: true, runValidators: true })
         updatedPerson
-                ? res.json(updatedPerson)
-                : res.sendStatus(204)
+            ? res.json(updatedPerson)
+            : res.sendStatus(204)
     }
     catch (error) { next(error) }
 })
@@ -117,6 +97,9 @@ const errorHandler = (error, req, res, next) => {
 
     if (error.name === 'CastError') {
         return res.status(400).send({ error: 'malformatted id' })
+    }
+    if (error.name === 'ValidationError') {
+        return res.status(400).send({ message: error.message })
     }
 
     next(error)

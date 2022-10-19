@@ -47,6 +47,11 @@ const App = () => {
             setNotification({message, status: 'success'})
             setTimeout(() => setNotification({message: null, status: null}), 2000);
           })
+          .catch( (error) => {
+            const message = error.response.data.message
+            setNotification({message, status: 'error'})
+            setTimeout(() => setNotification({message: null, status: null}), 2000);
+          })
       }
     } else {
       personService
@@ -55,6 +60,11 @@ const App = () => {
           setPersons([...persons, savedPerson])
           let message = `Added ${savedPerson.name}`
           setNotification({message, status: 'success'})
+          setTimeout(() => setNotification({message: null, status: null}), 2000);
+        })
+        .catch( (error) => {
+          const message = error.response.data.message
+          setNotification({message, status: 'error'})
           setTimeout(() => setNotification({message: null, status: null}), 2000);
         })
     }
