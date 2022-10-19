@@ -1,13 +1,13 @@
-const express = require("express")
-const morgan = require("morgan")
-const cors = require("cors")
+const express = require('express')
+const morgan = require('morgan')
+const cors = require('cors')
 const app = express()
 
-const Person = require("./models/person")
+const Person = require('./models/person')
 
 app.use(express.json())
 app.use(cors())
-app.use(express.static("build"))
+app.use(express.static('build'))
 
 app.use(
 	morgan(function (tokens, req, res) {
@@ -15,21 +15,21 @@ app.use(
 			tokens.method(req, res),
 			tokens.url(req, res),
 			tokens.status(req, res),
-			tokens.res(req, res, "content-length"),
-			"-",
-			tokens["response-time"](req, res),
-			"ms",
+			tokens.res(req, res, 'content-length'),
+			'-',
+			tokens['response-time'](req, res),
+			'ms',
 			JSON.stringify(req.body),
-		].join(" ")
+		].join(' ')
 	})
 )
 
-app.get("/api/persons/", async (req, res) => {
+app.get('/api/persons/', async (req, res) => {
 	const persons = await Person.find({})
 	res.json(persons)
 })
 
-app.get("/api/persons/:id", async (req, res, next) => {
+app.get('/api/persons/:id', async (req, res, next) => {
 	const id = req.params.id
 	try {
 		const foundPerson = await Person.findById(id)
@@ -39,7 +39,7 @@ app.get("/api/persons/:id", async (req, res, next) => {
 	}
 })
 
-app.post("/api/persons/", async (req, res, next) => {
+app.post('/api/persons/', async (req, res, next) => {
 	const body = req.body
 
 	const newPerson = new Person({
@@ -55,7 +55,7 @@ app.post("/api/persons/", async (req, res, next) => {
 	}
 })
 
-app.delete("/api/persons/:id", async (req, res, next) => {
+app.delete('/api/persons/:id', async (req, res, next) => {
 	const id = req.params.id
 	try {
 		const deletedPerson = await Person.findByIdAndDelete(id)
@@ -65,7 +65,7 @@ app.delete("/api/persons/:id", async (req, res, next) => {
 	}
 })
 
-app.put("/api/persons/:id", async (req, res, next) => {
+app.put('/api/persons/:id', async (req, res, next) => {
 	const id = req.params.id
 	const body = req.body
 
@@ -84,7 +84,7 @@ app.put("/api/persons/:id", async (req, res, next) => {
 	}
 })
 
-app.get("/info/", async (req, res) => {
+app.get('/info/', async (req, res) => {
 	const persons = await Person.find({})
 	res.send(
 		`Phonebook has info for ${
@@ -94,7 +94,7 @@ app.get("/info/", async (req, res) => {
 })
 
 const unknownEndpoint = (req, res) => {
-	res.status(404).send({ error: "unknown endpoint" })
+	res.status(404).send({ error: 'unknown endpoint' })
 }
 
 app.use(unknownEndpoint)
@@ -102,10 +102,10 @@ app.use(unknownEndpoint)
 const errorHandler = (error, req, res, next) => {
 	console.error(error.message)
 
-	if (error.name === "CastError") {
-		return res.status(400).send({ error: "malformatted id" })
+	if (error.name === 'CastError') {
+		return res.status(400).send({ error: 'malformatted id' })
 	}
-	if (error.name === "ValidationError") {
+	if (error.name === 'ValidationError') {
 		return res.status(400).send({ message: error.message })
 	}
 
