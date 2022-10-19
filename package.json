@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rd /s /q build && mkdir build && cd ./phonebook && npm run build --prod && xcopy build ..\\build /s /d",
     "deploy": "git push heroku main",
-    "deploy:full": "npm run build && git add . && git commit -m uibuild && npm run deploy",
+    "deploy:full": "npm run build && git add . && git commit -m uibuild && npm run deploy && heroku open",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
