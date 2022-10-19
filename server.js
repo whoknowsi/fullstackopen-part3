@@ -1,30 +1,11 @@
 const express = require("express")
 const morgan = require("morgan")
 const cors = require("cors")
-const mongoose = require("mongoose")
 const app = express()   
 
-console.log(process.env)
-const password = process.argv[2]
-const url = `mongodb+srv://fullstack:${password}@cluster0.hsl0a.mongodb.net/part3?retryWrites=true&w=majority`
+require("dotenv").config()
 
-let persons = [
-    {
-        "name": process.env.DB_PASSWORD,
-        "number": "5855",
-        "id": 0
-    },
-    {
-        "name": "Ernesto",
-        "number": "123156",
-        "id": 1
-    },
-    {
-        "name": "x",
-        "number": "123",
-        "id": 2
-    }
-]
+const Person = require("./models/person")
 
 app.use(express.json())
 app.use(cors())
@@ -41,27 +22,23 @@ app.use(morgan(function (tokens, req, res) {
     ].join(' ')
 }))
 
-app.get("/api/persons/", (req, res) => {
-    res.send(persons)
+app.get("/api/persons/", async (req, res) => {
+    const persons = await Person.find({})
+    res.json(persons)
 })
 
-app.get("/api/persons/:id", (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(person => person.id === id)
-
-    person
-        ? res.send(person)
-        : res.sendStatus(404)
+app.get("/api/persons/:id", async (req, res, next) => {
+    const id = req.params.id
+    try {
+        const foundPerson = await Person.findById(id)
+        foundPerson 
+                ? res.json(foundPerson)
+                : res.status(404).end()        
+    } 
+    catch (error) { next(error) }
 })
 
-app.delete("/api/persons/:id", (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(person => person.id !== id)
-
-    res.sendStatus(204)
-})
-
-app.post("/api/persons/", (req, res) => {
+app.post("/api/persons/", async (req, res) => {
     const body = req.body
 
     if (!body) {
@@ -74,24 +51,60 @@ app.post("/api/persons/", (req, res) => {
             error: "name or number missing"
         })
     }
-    const foundPerson = persons.find(person => person.name === body.name)
-    if (foundPerson) {
+
+    const foundPerson = await Person.findOne({name: body.name})
+    if(foundPerson) {
+        return res.status(400).json({ error: "name must be unique" })
+    }
+
+    const newPerson = Person({
+        name: body.name,
+        number: body.number,
+    })
+
+    newPerson.save().then(savedPerson => {
+        res.json(savedPerson)
+    })
+    
+})
+
+app.delete("/api/persons/:id", async (req, res, next) => {
+    const id = req.params.id
+    try {
+        const deletedPerson = await Person.findByIdAndDelete(id)
+        deletedPerson
+                ? res.json(deletedPerson)
+                : res.sendStatus(204)
+    }
+    catch (error) { next(error) }
+})
+
+app.put("/api/persons/:id", async (req, res, next) => {
+    const id = req.params.id
+    const body = req.body
+
+    if (!body) {
         return res.status(400).json({
-            error: "name must be unique"
+            error: "content missing"
         })
     }
 
-    const newPerson = {
-        name: body.name,
-        number: body.number,
-        id: Math.floor(Math.random() * 10000000000)
+    const toUpdate = {
+        number: body.number
     }
 
-    persons = persons.concat(newPerson)
-    res.json(newPerson)
+    try {
+        const updatedPerson = await Person.findByIdAndUpdate(id, toUpdate, { new: true })
+        updatedPerson
+                ? res.json(updatedPerson)
+                : res.sendStatus(204)
+    }
+    catch (error) { next(error) }
 })
 
-app.get("/info/", (req, res) => {
+
+app.get("/info/", async (req, res) => {
+    const persons = await Person.find({})
     res.send(`Phonebook has info for ${Object.keys(persons).length} people\n${new Date()}`)
 })
 
@@ -101,7 +114,20 @@ const unknownEndpoint = (req, res) => {
 
 app.use(unknownEndpoint)
 
-const PORT = process.env.PORT || 3001
+const errorHandler = (error, req, res, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return res.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
+
+
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server runing on port ${PORT}`)
 })

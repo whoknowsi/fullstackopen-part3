@@ -18,7 +18,10 @@ const App = () => {
   useEffect(() => {
     personService
       .getAll()
-      .then(persons => setPersons(persons))
+      .then(foundPersons => {
+        setPersons(foundPersons)
+        console.log(foundPersons)
+      })
   }, [])
 
   const personsToShow = search !== ''
